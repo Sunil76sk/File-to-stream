@@ -38,8 +38,6 @@
 const BASE_URL = window.location.origin;
 const FILE_ID = window.location.pathname.split("/").pop();
 
-// Build a real Android VIEW intent for the target application.
-// VLC's old vlc://http://... style is not reliable on current VLC Android.
 function androidIntent(httpUrl, mimeType, packageName = "") {
     const url = new URL(httpUrl);
     const path = `${url.pathname}${url.search}`;
@@ -47,6 +45,20 @@ function androidIntent(httpUrl, mimeType, packageName = "") {
     if (packageName) intent += `package=${packageName};`;
     intent += "end";
     return intent;
+}
+
+function getPlayerMime(fileName, serverMime) {
+    if (serverMime && serverMime !== "application/octet-stream") return serverMime;
+    const name = (fileName || "").toLowerCase();
+    if (name.endsWith(".mkv")) return "application/x-matroska";
+    if (name.endsWith(".mp4")) return "video/mp4";
+    if (name.endsWith(".webm")) return "video/webm";
+    if (name.endsWith(".avi")) return "video/x-msvideo";
+    if (name.endsWith(".mov")) return "video/quicktime";
+    if (name.endsWith(".m4v")) return "video/x-m4v";
+    if (name.endsWith(".mp3")) return "audio/mpeg";
+    if (name.endsWith(".m4a")) return "audio/mp4";
+    return serverMime || "video/*";
 }
 
 async function fetchFileData() {
@@ -64,7 +76,7 @@ async function fetchFileData() {
         fileSizeEl.innerText = `Size • ${data.file_size}`;
         buttonContainer.innerHTML = "";
         if (data.is_media) {
-            const mimeType = data.mime_type || "video/*";
+            const mimeType = getPlayerMime(data.file_name, data.mime_type);
             const mx = androidIntent(data.direct_dl_link, mimeType, "com.mxtech.videoplayer.ad");
             const vlc = androidIntent(data.direct_dl_link, mimeType, "org.videolan.vlc");
             buttonContainer.innerHTML = `
