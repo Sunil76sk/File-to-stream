@@ -95,6 +95,15 @@ async def lifespan(app: FastAPI):
 
     try:
         print("Starting main Pyrogram bot...")
+
+        # Pyrogram 2.0.106 binds Client/Dispatcher to the event loop that exists
+        # when Client() is constructed. This module is imported before Uvicorn
+        # creates its running loop, so explicitly rebind both objects here.
+        current_loop = asyncio.get_running_loop()
+        bot.loop = current_loop
+        bot.dispatcher.loop = current_loop
+        print(f"Pyrogram event loop bound: {id(current_loop)}")
+
         await bot.start()
         me = await bot.get_me()
         Config.BOT_USERNAME = me.username or ""
