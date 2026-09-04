@@ -56,7 +56,6 @@
 
 <body class="min-h-screen flex flex-col">
 
-<!-- HEADER -->
 <header class="p-6 text-center">
     <h1 class="text-2xl font-bold tracking-wide">
         <span class="text-indigo-400">Secure</span> Access
@@ -64,32 +63,24 @@
     <p class="text-sm text-gray-400 mt-1">Private • Fast • Encrypted</p>
 </header>
 
-<!-- MAIN -->
 <main class="flex-grow flex items-center justify-center px-4">
     <div class="max-w-xl w-full glass rounded-2xl p-6 sm:p-8 text-center shadow-2xl">
-
-        <!-- Loader -->
         <div id="loader-container">
             <div class="loader"></div>
             <p class="mt-4 text-gray-400">Fetching your file securely…</p>
         </div>
 
-        <!-- Content -->
         <div id="content-container" style="display:none">
             <h2 id="file-name" class="text-xl sm:text-2xl font-bold break-words"></h2>
             <p id="file-size" class="text-gray-400 mt-1 mb-6"></p>
-
             <div id="button-container" class="flex flex-col gap-4"></div>
-
             <p class="mt-6 text-xs text-gray-500">
                 Links are private & protected. Do not share publicly.
             </p>
         </div>
-
     </div>
 </main>
 
-<!-- FOOTER -->
 <footer class="p-4 text-center text-xs text-gray-500">
     © 2025 • All Rights Reserved
 </footer>
@@ -97,6 +88,18 @@
 <script>
 const BASE_URL = window.location.origin;
 const FILE_ID = window.location.pathname.split("/").pop();
+
+// Android's intent:// format is more reliable than intent:https://... .
+// In particular, it prevents MX Player/VLC from interpreting the URL as
+// a local file path (file:///), which caused the previous playback error.
+function androidIntent(httpUrl, mimeType, packageName = "") {
+    const url = new URL(httpUrl);
+    const path = `${url.pathname}${url.search}`;
+    let intent = `intent://${url.host}${path}#Intent;scheme=${url.protocol.replace(":", "")};action=android.intent.action.VIEW;type=${mimeType || "video/*"};`;
+    if (packageName) intent += `package=${packageName};`;
+    intent += "end";
+    return intent;
+}
 
 async function fetchFileData() {
     const loader = document.getElementById("loader-container");
@@ -114,12 +117,12 @@ async function fetchFileData() {
 
         fileNameEl.innerText = data.file_name;
         fileSizeEl.innerText = `Size • ${data.file_size}`;
-
         buttonContainer.innerHTML = "";
 
         if (data.is_media) {
-            const mx = `intent:${data.direct_dl_link}#Intent;action=android.intent.action.VIEW;type=video/*;end`;
-            const vlc = `intent:${data.direct_dl_link}#Intent;action=android.intent.action.VIEW;type=video/*;package=org.videolan.vlc;end`;
+            const mimeType = data.mime_type || "video/*";
+            const mx = androidIntent(data.direct_dl_link, mimeType, "com.mxtech.videoplayer.ad");
+            const vlc = androidIntent(data.direct_dl_link, mimeType, "org.videolan.vlc");
 
             buttonContainer.innerHTML = `
                 <a href="${data.direct_dl_link}" class="btn btn-primary">⬇ Download Now</a>
@@ -134,7 +137,6 @@ async function fetchFileData() {
 
         loader.style.display = "none";
         content.style.display = "block";
-
     } catch {
         loader.innerHTML = "<p class='text-red-400'>❌ Link expired or invalid</p>";
     }
