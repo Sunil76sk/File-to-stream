@@ -40,7 +40,7 @@ const FILE_ID = window.location.pathname.split("/").pop();
 
 function androidIntent(httpUrl, mimeType, packageName = "") {
     const url = new URL(httpUrl);
-    const path = `${url.pathname}${url.search}`;
+    const path = encodeURI(`${url.pathname}${url.search}`);
     let intent = `intent://${url.host}${path}#Intent;scheme=${url.protocol.replace(":", "")};action=android.intent.action.VIEW;type=${mimeType || "video/*"};`;
     if (packageName) intent += `package=${packageName};`;
     intent += "end";
@@ -48,17 +48,10 @@ function androidIntent(httpUrl, mimeType, packageName = "") {
 }
 
 function getPlayerMime(fileName, serverMime) {
-    if (serverMime && serverMime !== "application/octet-stream") return serverMime;
     const name = (fileName || "").toLowerCase();
-    if (name.endsWith(".mkv")) return "application/x-matroska";
-    if (name.endsWith(".mp4")) return "video/mp4";
-    if (name.endsWith(".webm")) return "video/webm";
-    if (name.endsWith(".avi")) return "video/x-msvideo";
-    if (name.endsWith(".mov")) return "video/quicktime";
-    if (name.endsWith(".m4v")) return "video/x-m4v";
-    if (name.endsWith(".mp3")) return "audio/mpeg";
-    if (name.endsWith(".m4a")) return "audio/mp4";
-    return serverMime || "video/*";
+    if (name.endsWith(".mp3") || name.endsWith(".m4a") || name.endsWith(".aac") || name.endsWith(".flac")) return "audio/*";
+    if (serverMime && serverMime.startsWith("audio/")) return "audio/*";
+    return "video/*";
 }
 
 async function fetchFileData() {
