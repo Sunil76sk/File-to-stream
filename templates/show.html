@@ -38,8 +38,8 @@
 const BASE_URL = window.location.origin;
 const FILE_ID = window.location.pathname.split("/").pop();
 
-// MX Player works with a standard Android intent. VLC Android also exposes
-// the vlc:// protocol for launching a network stream directly from a browser.
+// Build a real Android VIEW intent for the target application.
+// VLC's old vlc://http://... style is not reliable on current VLC Android.
 function androidIntent(httpUrl, mimeType, packageName = "") {
     const url = new URL(httpUrl);
     const path = `${url.pathname}${url.search}`;
@@ -66,7 +66,7 @@ async function fetchFileData() {
         if (data.is_media) {
             const mimeType = data.mime_type || "video/*";
             const mx = androidIntent(data.direct_dl_link, mimeType, "com.mxtech.videoplayer.ad");
-            const vlc = `vlc://${data.direct_dl_link}`;
+            const vlc = androidIntent(data.direct_dl_link, mimeType, "org.videolan.vlc");
             buttonContainer.innerHTML = `
                 <a href="${data.direct_dl_link}" class="btn btn-primary">⬇ Download Now</a>
                 <a href="${mx}" class="btn btn-secondary">▶ Play in MX Player</a>
